@@ -4,6 +4,8 @@ name: Scheduled Nix Build & Upload
 on:
   schedule:
     - cron: "0 2 * * *"
+  push:
+    branches: [main]
   # 也可以加推送触发
   workflow_dispatch:
 
@@ -28,7 +30,8 @@ jobs:
       # 启用 Cachix 缓存
       - uses: cachix/cachix-action@v15
         with:
-          name: mycache
+          name: rhencloud
+          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
 
       # 构建指定的 Flake
       - name: Build targets
@@ -36,7 +39,7 @@ jobs:
           nix build ./flakes/${{ matrix.package }} --out-link output/${{ matrix.package }}
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.package }}
           path: output/${{ matrix.package }}
