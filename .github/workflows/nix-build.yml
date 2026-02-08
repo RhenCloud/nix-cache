@@ -1,0 +1,42 @@
+name: Scheduled Nix Build & Upload
+
+# 定时触发：UTC 时间每天 02:00
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  # 也可以加推送触发
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        package: [hyprland] # 在此添加更多软件包
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      # 检出代码
+      - uses: actions/checkout@v4
+
+      # 安装 Nix
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      # 启用 Cachix 缓存
+      - uses: cachix/cachix-action@v15
+        with:
+          name: mycache
+
+      # 构建指定的 Flake
+      - name: Build targets
+        run: |
+          nix build ./flakes/${{ matrix.package }} --out-link output/${{ matrix.package }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.package }}
+          path: output/${{ matrix.package }}
